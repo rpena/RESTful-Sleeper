@@ -55,3 +55,43 @@ On the target Debian/Ubuntu VM or LXC inside Proxmox:
 5. Back up the Docker volume `redis-data` if cached data persistence is desired. The cache can also be treated as disposable and rebuilt from Sleeper.
 
 The service listens on port `8080` and exits cleanly on SIGTERM, which supports normal container restarts and VM maintenance.
+
+## Home Assistant card
+
+The repository includes a dependency-free custom Lovelace card at `web/sleeper-dashboard-card.js`. Copy it into Home Assistant's `/config/www/` directory, then add it as a JavaScript module resource under **Settings > Dashboards > Resources**:
+
+```yaml
+url: /local/sleeper-dashboard-card.js
+type: module
+```
+
+Configure the REST sensor first:
+
+```yaml
+rest:
+	- resource: http://YOUR_DOCKER_HOST:8080/api/v1/dashboard
+		scan_interval: 60
+		sensor:
+			- name: Sleeper Dashboard
+				unique_id: sleeper_dashboard
+				value_template: "{{ value_json.week }}"
+				json_attributes:
+					- league
+					- matchups
+					- matchup
+					- standings
+					- waiver_pickups
+```
+
+Add the card to a dashboard:
+
+```yaml
+type: custom:sleeper-dashboard-card
+entity: sensor.sleeper_dashboard
+title: Gameday board
+show_standings: true
+show_waivers: true
+show_raw: false
+```
+
+The refresh button requests an immediate update of the REST sensor. The API remains available as raw JSON at `/api/v1/dashboard`.
