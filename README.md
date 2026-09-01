@@ -17,7 +17,7 @@ Any additional Sleeper GET endpoint can be forwarded without code changes. Query
 
 ## Local development
 
-Requirements: Go 1.23+ and Docker Compose.
+Requirements: Go 1.27+ and Docker Compose.
 
 ```sh
 go mod tidy

@@ -1,6 +1,6 @@
 module github.com/rpena/RESTful-Sleeper
 
-go 1.23
+go 1.27
 
 require github.com/redis/go-redis/v9 v9.6.3
 
