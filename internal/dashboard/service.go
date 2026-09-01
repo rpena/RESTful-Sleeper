@@ -37,11 +37,12 @@ type Request struct {
 }
 
 type Dashboard struct {
-	League        League         `json:"league"`
-	Week          int            `json:"week"`
-	Matchup       MatchupView    `json:"matchup"`
-	Standings     []Standing     `json:"standings"`
-	WaiverPickups []WaiverPickup `json:"waiver_pickups"`
+	League        League           `json:"league"`
+	Week          int              `json:"week"`
+	Matchups      []MatchupSummary `json:"matchups"`
+	Matchup       MatchupView      `json:"matchup"`
+	Standings     []Standing       `json:"standings"`
+	WaiverPickups []WaiverPickup   `json:"waiver_pickups"`
 }
 
 type League struct {
@@ -54,6 +55,22 @@ type League struct {
 type MatchupView struct {
 	Opponent *TeamMatchup `json:"opponent,omitempty"`
 	YourTeam *TeamMatchup `json:"your_team,omitempty"`
+}
+
+type MatchupSummary struct {
+	MatchupID int           `json:"matchup_id"`
+	Teams     []MatchupTeam `json:"teams"`
+}
+
+type MatchupTeam struct {
+	RosterID            int     `json:"roster_id"`
+	OwnerID             string  `json:"owner_id,omitempty"`
+	DisplayName         string  `json:"display_name,omitempty"`
+	CurrentPoints       float64 `json:"current_points"`
+	ProjectedPoints     float64 `json:"projected_points,omitempty"`
+	ProjectionAvailable bool    `json:"projection_available"`
+	PlayersCompleted    int     `json:"players_completed"`
+	PlayersRemaining    int     `json:"players_remaining"`
 }
 
 type TeamMatchup struct {
@@ -204,7 +221,46 @@ func (s *Service) Build(ctx context.Context, request Request) (Dashboard, error)
 	}
 
 	waiverPickups := s.waiverPickups(ctx, request.LeagueID, request.Week, players)
-	return Dashboard{League: League{ID: request.LeagueID, Name: league.Name, Season: league.Season, TotalRosters: league.TotalRosters}, Week: request.Week, Matchup: matchupView, Standings: standings, WaiverPickups: waiverPickups}, nil
+	matchupSummaries := s.matchupSummaries(matchups, rosterByID, ownerNames, stats, projections)
+	return Dashboard{League: League{ID: request.LeagueID, Name: league.Name, Season: league.Season, TotalRosters: league.TotalRosters}, Week: request.Week, Matchups: matchupSummaries, Matchup: matchupView, Standings: standings, WaiverPickups: waiverPickups}, nil
+}
+
+func (s *Service) matchupSummaries(matchups []matchupResponse, rosters map[int]rosterResponse, ownerNames map[string]string, stats, projections map[string]map[string]any) []MatchupSummary {
+	byMatchup := make(map[int][]matchupResponse)
+	for _, matchup := range matchups {
+		byMatchup[matchup.MatchupID] = append(byMatchup[matchup.MatchupID], matchup)
+	}
+	ids := make([]int, 0, len(byMatchup))
+	for matchupID := range byMatchup {
+		ids = append(ids, matchupID)
+	}
+	sort.Ints(ids)
+	summaries := make([]MatchupSummary, 0, len(ids))
+	for _, matchupID := range ids {
+		summary := MatchupSummary{MatchupID: matchupID, Teams: make([]MatchupTeam, 0, len(byMatchup[matchupID]))}
+		for _, matchup := range byMatchup[matchupID] {
+			roster, ok := rosters[matchup.RosterID]
+			if !ok {
+				continue
+			}
+			team := MatchupTeam{RosterID: roster.RosterID, OwnerID: roster.OwnerID, DisplayName: ownerNames[roster.OwnerID], CurrentPoints: matchup.Points}
+			for _, playerID := range roster.Starters {
+				if _, played := stats[playerID]; played {
+					team.PlayersCompleted++
+				} else {
+					team.PlayersRemaining++
+				}
+				if projection, available := projections[playerID]; available {
+					team.ProjectedPoints += metric(projection, "pts_ppr")
+					team.ProjectionAvailable = true
+				}
+			}
+			summary.Teams = append(summary.Teams, team)
+		}
+		sort.Slice(summary.Teams, func(i, j int) bool { return summary.Teams[i].RosterID < summary.Teams[j].RosterID })
+		summaries = append(summaries, summary)
+	}
+	return summaries
 }
 
 func (s *Service) teamMatchup(roster rosterResponse, matchup matchupResponse, players map[string]playerMetadata, stats, projections map[string]map[string]any) *TeamMatchup {

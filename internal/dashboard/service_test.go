@@ -49,6 +49,34 @@ func TestGetRefetchesMalformedCachedResponse(t *testing.T) {
 	}
 }
 
+func TestMatchupSummariesIncludeEveryTeamAndPlayerCounts(t *testing.T) {
+	service := &Service{}
+	rosters := map[int]rosterResponse{
+		1: {RosterID: 1, OwnerID: "user-1", Starters: []string{"p1", "p2"}},
+		2: {RosterID: 2, OwnerID: "user-2", Starters: []string{"p3"}},
+	}
+	matchups := []matchupResponse{
+		{RosterID: 2, MatchupID: 7, Points: 88.5},
+		{RosterID: 1, MatchupID: 7, Points: 92.25},
+	}
+	stats := map[string]map[string]any{"p1": {"pts_ppr": 12.0}}
+	projections := map[string]map[string]any{
+		"p1": {"pts_ppr": 14.0},
+		"p2": {"pts_ppr": 10.0},
+		"p3": {"pts_ppr": 9.0},
+	}
+
+	result := service.matchupSummaries(matchups, rosters, map[string]string{"user-1": "One", "user-2": "Two"}, stats, projections)
+
+	if len(result) != 1 || len(result[0].Teams) != 2 {
+		t.Fatalf("matchup summaries = %#v, want one matchup with two teams", result)
+	}
+	team := result[0].Teams[0]
+	if team.RosterID != 1 || team.CurrentPoints != 92.25 || team.PlayersCompleted != 1 || team.PlayersRemaining != 1 || team.ProjectedPoints != 24 || !team.ProjectionAvailable {
+		t.Fatalf("team summary = %#v, want roster 1 with score, counts, and projection", team)
+	}
+}
+
 type testClient struct {
 	calls int
 	body  []byte
