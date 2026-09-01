@@ -115,11 +115,9 @@ type rosterResponse struct {
 }
 
 type matchupResponse struct {
-	RosterID       int                `json:"roster_id"`
-	MatchupID      int                `json:"matchup_id"`
-	Points         float64            `json:"points"`
-	PlayersPoints  map[string]float64 `json:"players_points"`
-	StartersPoints map[string]float64 `json:"starters_points"`
+	RosterID  int     `json:"roster_id"`
+	MatchupID int     `json:"matchup_id"`
+	Points    float64 `json:"points"`
 }
 
 type transactionResponse struct {
