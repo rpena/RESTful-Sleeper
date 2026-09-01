@@ -12,10 +12,14 @@ import (
 	"github.com/rpena/RESTful-Sleeper/internal/sleeper"
 )
 
-type fakeClient struct{ calls int }
+type fakeClient struct {
+	calls int
+	path  string
+}
 
-func (c *fakeClient) Get(context.Context, string, string) (sleeper.Response, error) {
+func (c *fakeClient) Get(_ context.Context, path, _ string) (sleeper.Response, error) {
 	c.calls++
+	c.path = path
 	return sleeper.Response{StatusCode: http.StatusOK, Body: []byte(`{"players":[]}`)}, nil
 }
 
@@ -27,6 +31,35 @@ func (c *fakeCache) Get(_ context.Context, key string) ([]byte, error) {
 		return nil, cache.ErrMiss
 	}
 	return value, nil
+}
+
+func TestServeUserUsesConfiguredUserID(t *testing.T) {
+	client := &fakeClient{}
+	store := &fakeCache{values: make(map[string][]byte)}
+	h := (&Handler{sleeper: client, cache: store, ttl: time.Minute, userID: "myUser"})
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/user", nil)
+	recorder := httptest.NewRecorder()
+
+	h.serve(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	if client.path != "user/myUser" {
+		t.Fatalf("upstream path = %q, want %q", client.path, "user/myUser")
+	}
+}
+
+func TestServeUserRequiresConfiguredUserID(t *testing.T) {
+	h := (&Handler{userID: ""})
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/user", nil)
+	recorder := httptest.NewRecorder()
+
+	h.serve(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
+	}
 }
 func (c *fakeCache) Set(_ context.Context, key string, value []byte, _ time.Duration) error {
 	c.values[key] = value
