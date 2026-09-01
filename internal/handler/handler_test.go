@@ -34,19 +34,22 @@ func (c *fakeCache) Get(_ context.Context, key string) ([]byte, error) {
 }
 
 func TestServeUserUsesConfiguredUserID(t *testing.T) {
-	client := &fakeClient{}
-	store := &fakeCache{values: make(map[string][]byte)}
-	h := (&Handler{sleeper: client, cache: store, ttl: time.Minute, userID: "myUser"})
-	request := httptest.NewRequest(http.MethodGet, "/api/v1/user", nil)
-	recorder := httptest.NewRecorder()
+	for _, path := range []string{"/api/v1/user", "/api/v1/user/"} {
+		t.Run(path, func(t *testing.T) {
+			client := &fakeClient{}
+			store := &fakeCache{values: make(map[string][]byte)}
+			h := (&Handler{sleeper: client, cache: store, ttl: time.Minute, userID: "myUser"})
+			recorder := httptest.NewRecorder()
 
-	h.serve(recorder, request)
+			h.serve(recorder, httptest.NewRequest(http.MethodGet, path, nil))
 
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
-	}
-	if client.path != "user/myUser" {
-		t.Fatalf("upstream path = %q, want %q", client.path, "user/myUser")
+			if recorder.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+			}
+			if client.path != "user/myUser" {
+				t.Fatalf("upstream path = %q, want %q", client.path, "user/myUser")
+			}
+		})
 	}
 }
 

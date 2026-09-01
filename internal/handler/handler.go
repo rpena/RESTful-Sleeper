@@ -56,7 +56,7 @@ func (h *Handler) serve(w http.ResponseWriter, r *http.Request) {
 		h.serveDashboard(w, r)
 		return
 	}
-	if r.URL.Path == "/api/v1/user" {
+	if r.URL.Path == "/api/v1/user" || r.URL.Path == "/api/v1/user/" {
 		if r.Method != http.MethodGet || h.userID == "" {
 			http.Error(w, `{"error":"SLEEPER_USER_ID is not configured"}`, http.StatusBadRequest)
 			return
