@@ -27,7 +27,7 @@ class SleeperDashboardCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 8;
+    return 12;
   }
 
   render() {
@@ -38,6 +38,13 @@ class SleeperDashboardCard extends HTMLElement {
     const standings = Array.isArray(data.standings) ? data.standings : [];
     const waivers = Array.isArray(data.waiver_pickups) ? data.waiver_pickups : [];
     const league = data.league || {};
+    const yourTeam = data.matchup?.your_team;
+    const featuredMatchup = yourTeam
+      ? matchups.find((item) => item.teams?.some((team) => team.roster_id === yourTeam.roster_id))
+      : null;
+    const otherMatchups = featuredMatchup
+      ? matchups.filter((item) => item !== featuredMatchup)
+      : matchups;
 
     this.shadowRoot.innerHTML = `
       <style>${this.styles()}</style>
@@ -51,9 +58,10 @@ class SleeperDashboardCard extends HTMLElement {
             </div>
             <button class="refresh" title="Refresh dashboard data" aria-label="Refresh dashboard data">↻</button>
           </header>
-          ${matchups.length ? `<section class="section"><div class="section-heading"><h2>League matchups</h2><span>${matchups.length} games</span></div><div class="matchups">${matchups.map((item, index) => this.matchup(item, index)).join("")}</div></section>` : this.emptyState(state)}
-          ${this.config.show_standings && standings.length ? `<section class="section secondary"><div class="section-heading"><h2>Leaderboard</h2><span>points for</span></div><div class="table">${standings.slice(0, 10).map((team) => this.standing(team)).join("")}</div></section>` : ""}
+          ${featuredMatchup ? `<section class="section featured-section"><div class="section-heading"><h2>Your matchup</h2><span>matchup ${this.escape(featuredMatchup.matchup_id)}</span></div><div class="featured-matchup">${this.matchup(featuredMatchup, 0)}</div></section>` : this.emptyState(state)}
+          ${otherMatchups.length ? `<section class="section secondary"><div class="section-heading"><h2>Other matchups</h2><span>${otherMatchups.length} games</span></div><div class="matchups">${otherMatchups.map((item, index) => this.matchup(item, index)).join("")}</div></section>` : ""}
           ${this.config.show_waivers && waivers.length ? `<section class="section secondary"><div class="section-heading"><h2>Waiver watch</h2><span>top adds</span></div><div class="waivers">${waivers.slice(0, 5).map((player) => this.waiver(player)).join("")}</div></section>` : ""}
+          ${this.config.show_standings && standings.length ? `<section class="section secondary standings-section"><div class="section-heading"><h2>Leaderboard</h2><span>points for</span></div><div class="table">${standings.slice(0, 10).map((team) => this.standing(team)).join("")}</div></section>` : ""}
           ${this.config.show_raw ? `<details class="raw"><summary>Raw response</summary><pre>${this.escape(JSON.stringify(data, null, 2))}</pre></details>` : ""}
         </div>
       </ha-card>
@@ -129,7 +137,11 @@ class SleeperDashboardCard extends HTMLElement {
       .section { padding-top: 21px; }
       .section.secondary { border-top: 1px solid var(--line); margin-top: 24px; }
       .section-heading { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 11px; }
-      .matchups { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+      .matchups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .featured-matchup { max-width: 760px; }
+      .featured-matchup .matchup { border: 2px solid var(--accent); padding: 18px; }
+      .featured-matchup .team-top strong { font-size: 31px; }
+      .standings-section .table { max-width: 680px; }
       .matchup { background: white; border: 1px solid var(--line); border-radius: 9px; padding: 14px; }
       .matchup-label { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 13px; }
       .status { color: var(--accent); font-size: 10px; letter-spacing: .04em; }
