@@ -138,17 +138,14 @@ func New(client sleeperClient, redisCache cacheStore, ttl time.Duration) *Servic
 }
 
 func (s *Service) Build(ctx context.Context, request Request) (Dashboard, error) {
-	if request.Season == "" {
-		request.Season = "2026"
-	}
 	league, err := get[leagueResponse](s, ctx, "league/"+request.LeagueID, "")
 	if err != nil {
 		return Dashboard{}, err
 	}
-	users, err := get[[]userResponse](s, ctx, "league/"+request.LeagueID+"/users", "")
-	if err != nil {
-		return Dashboard{}, err
+	if request.Season == "" {
+		request.Season = league.Season
 	}
+	users, _ := get[[]userResponse](s, ctx, "league/"+request.LeagueID+"/users", "")
 	rosters, err := get[[]rosterResponse](s, ctx, "league/"+request.LeagueID+"/rosters", "")
 	if err != nil {
 		return Dashboard{}, err
@@ -157,14 +154,8 @@ func (s *Service) Build(ctx context.Context, request Request) (Dashboard, error)
 	if err != nil {
 		return Dashboard{}, err
 	}
-	stats, err := get[map[string]map[string]any](s, ctx, "stats/nfl/"+request.Season+"/"+strconv.Itoa(request.Week), "season_type=regular")
-	if err != nil {
-		return Dashboard{}, err
-	}
-	projections, err := get[map[string]map[string]any](s, ctx, "projections/nfl/"+request.Season+"/"+strconv.Itoa(request.Week), "season_type=regular")
-	if err != nil {
-		return Dashboard{}, err
-	}
+	stats, _ := get[map[string]map[string]any](s, ctx, "stats/nfl/"+request.Season+"/"+strconv.Itoa(request.Week), "season_type=regular")
+	projections, _ := get[map[string]map[string]any](s, ctx, "projections/nfl/"+request.Season+"/"+strconv.Itoa(request.Week), "season_type=regular")
 	now := time.Now().UTC()
 	players, err := getWithOptions[map[string]playerMetadata](s, ctx, "players/nfl", "", sleeper.CacheKey("players/nfl", "", now), sleeper.CacheTTL("players/nfl", now, s.ttl))
 	if err != nil {
