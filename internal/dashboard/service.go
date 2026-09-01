@@ -115,6 +115,7 @@ type leagueResponse struct {
 
 type userResponse struct {
 	UserID      string `json:"user_id"`
+	Username    string `json:"username"`
 	DisplayName string `json:"display_name"`
 }
 
@@ -178,8 +179,12 @@ func (s *Service) Build(ctx context.Context, request Request) (Dashboard, error)
 	}
 
 	ownerNames := make(map[string]string, len(users))
+	requestedOwnerID := request.UserID
 	for _, user := range users {
 		ownerNames[user.UserID] = user.DisplayName
+		if strings.EqualFold(user.UserID, request.UserID) || strings.EqualFold(user.Username, request.UserID) || strings.EqualFold(user.DisplayName, request.UserID) {
+			requestedOwnerID = user.UserID
+		}
 	}
 	rosterByID := make(map[int]rosterResponse, len(rosters))
 	for _, roster := range rosters {
@@ -201,7 +206,7 @@ func (s *Service) Build(ctx context.Context, request Request) (Dashboard, error)
 
 	var matchupView MatchupView
 	for _, roster := range rosters {
-		if roster.OwnerID != request.UserID {
+		if roster.OwnerID != requestedOwnerID {
 			continue
 		}
 		matchup, ok := matchupByRoster[roster.RosterID]

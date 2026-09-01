@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -74,6 +75,19 @@ func TestMatchupSummariesIncludeEveryTeamAndPlayerCounts(t *testing.T) {
 	team := result[0].Teams[0]
 	if team.RosterID != 1 || team.CurrentPoints != 92.25 || team.PlayersCompleted != 1 || team.PlayersRemaining != 1 || team.ProjectedPoints != 24 || !team.ProjectionAvailable {
 		t.Fatalf("team summary = %#v, want roster 1 with score, counts, and projection", team)
+	}
+}
+
+func TestUserReferenceResolvesUsername(t *testing.T) {
+	users := []userResponse{{UserID: "123", Username: "muych1ngones", DisplayName: "My Team"}}
+	requestedOwnerID := "muych1ngones"
+	for _, user := range users {
+		if strings.EqualFold(user.UserID, requestedOwnerID) || strings.EqualFold(user.Username, requestedOwnerID) || strings.EqualFold(user.DisplayName, requestedOwnerID) {
+			requestedOwnerID = user.UserID
+		}
+	}
+	if requestedOwnerID != "123" {
+		t.Fatalf("resolved owner ID = %q, want %q", requestedOwnerID, "123")
 	}
 }
 

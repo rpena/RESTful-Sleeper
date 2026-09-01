@@ -41,7 +41,7 @@ For Docker Compose, create a `.env` file next to `docker-compose.yml`:
 
 ```dotenv
 SLEEPER_LEAGUE_ID=your-league-id
-SLEEPER_USER_ID=your-sleeper-user-id
+SLEEPER_USER_ID=your-sleeper-username-or-user-id
 ```
 
 ## Proxmox VE deployment
