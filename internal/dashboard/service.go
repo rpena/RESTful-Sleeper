@@ -250,7 +250,7 @@ func (s *Service) matchupSummaries(matchups []matchupResponse, rosters map[int]r
 			}
 			team := MatchupTeam{RosterID: roster.RosterID, OwnerID: roster.OwnerID, DisplayName: ownerNames[roster.OwnerID], CurrentPoints: matchup.Points}
 			for _, playerID := range roster.Starters {
-				if _, played := stats[playerID]; played {
+				if playerHasPlayed(stats[playerID]) {
 					team.PlayersCompleted++
 				} else {
 					team.PlayersRemaining++
@@ -266,6 +266,16 @@ func (s *Service) matchupSummaries(matchups []matchupResponse, rosters map[int]r
 		summaries = append(summaries, summary)
 	}
 	return summaries
+}
+
+func playerHasPlayed(values map[string]any) bool {
+	if len(values) == 0 {
+		return false
+	}
+	if gamesPlayed := metric(values, "gp"); gamesPlayed > 0 {
+		return true
+	}
+	return metric(values, "pts_ppr") != 0
 }
 
 func (s *Service) teamMatchup(roster rosterResponse, matchup matchupResponse, players map[string]playerMetadata, stats, projections map[string]map[string]any) *TeamMatchup {

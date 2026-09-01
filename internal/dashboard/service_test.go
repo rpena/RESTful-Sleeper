@@ -78,6 +78,18 @@ func TestMatchupSummariesIncludeEveryTeamAndPlayerCounts(t *testing.T) {
 	}
 }
 
+func TestPlayerHasPlayedIgnoresFutureZeroStats(t *testing.T) {
+	if playerHasPlayed(map[string]any{"pts_ppr": 0.0}) {
+		t.Fatal("future zero-point player should remain unplayed")
+	}
+	if !playerHasPlayed(map[string]any{"gp": 1.0, "pts_ppr": 0.0}) {
+		t.Fatal("player with a completed game should count as played")
+	}
+	if !playerHasPlayed(map[string]any{"pts_ppr": 8.5}) {
+		t.Fatal("player with non-zero points should count as played")
+	}
+}
+
 func TestUserReferenceResolvesUsername(t *testing.T) {
 	users := []userResponse{{UserID: "123", Username: "muych1ngones", DisplayName: "My Team"}}
 	requestedOwnerID := "muych1ngones"
