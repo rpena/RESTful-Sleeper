@@ -14,7 +14,7 @@ The proxy forwards GET requests under `/api/v1/` to Sleeper's `/v1/` API:
 - `GET /api/v1/dashboard?league_id={league_id}&user_id={user_id}&season={season}&week={week}`
 - `GET /healthz`
 
-Any additional Sleeper GET endpoint can be forwarded without code changes. Query parameters are included in the Redis cache key.
+Any additional Sleeper GET endpoint can be forwarded without code changes. Query parameters are included in the Redis cache key. The `players/nfl` endpoint is the exception: it uses a UTC calendar-day key and expires at the next UTC midnight, regardless of the normal `CACHE_TTL` setting.
 
 The dashboard endpoint returns one response containing the selected team's current matchup, starter and roster player points versus projections, league standings, and the top ten players added through completed waiver or free-agent transactions for that week. `league_id` and `user_id` are request parameters so multiple people and leagues can use the same service. `season` defaults to 2026 and `week` defaults to 1 when omitted.
 
@@ -29,7 +29,7 @@ docker compose up -d --build
 curl http://localhost:8080/api/v1/players/nfl
 ```
 
-Stop the stack with `docker compose down`. Redis data is kept in the `redis-data` named volume.
+Stop the stack with `docker compose down`. Redis data is kept in the `redis-data` named volume, so restarting the stack on the same UTC day reuses the cached players response. Do not use `docker compose down -v` unless you intentionally want to delete the cache and allow another players request.
 
 `CACHE_TTL` and `REQUEST_TIMEOUT` are expressed in seconds. Override them in a local `.env` file or in the Compose environment section.
 

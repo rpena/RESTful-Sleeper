@@ -60,7 +60,8 @@ func (h *Handler) serve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	path := strings.TrimPrefix(r.URL.Path, "/api/v1/")
-	key := "sleeper:" + r.URL.RequestURI()
+	key := sleeper.CacheKey(path, r.URL.RawQuery, time.Now().UTC())
+	ttl := sleeper.CacheTTL(path, time.Now().UTC(), h.ttl)
 	if body, err := h.cache.Get(r.Context(), key); err == nil {
 		writeJSON(w, http.StatusOK, body)
 		return
@@ -74,7 +75,7 @@ func (h *Handler) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if response.StatusCode >= 200 && response.StatusCode < 300 {
-		if err := h.cache.Set(r.Context(), key, response.Body, h.ttl); err != nil {
+		if err := h.cache.Set(r.Context(), key, response.Body, ttl); err != nil {
 			slog.Debug("cache write failed", "error", err, "key", key)
 		}
 	}

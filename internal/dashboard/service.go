@@ -165,7 +165,8 @@ func (s *Service) Build(ctx context.Context, request Request) (Dashboard, error)
 	if err != nil {
 		return Dashboard{}, err
 	}
-	players, err := get[map[string]playerMetadata](s, ctx, "players/nfl", "")
+	now := time.Now().UTC()
+	players, err := getWithOptions[map[string]playerMetadata](s, ctx, "players/nfl", "", sleeper.CacheKey("players/nfl", "", now), sleeper.CacheTTL("players/nfl", now, s.ttl))
 	if err != nil {
 		return Dashboard{}, err
 	}
@@ -274,12 +275,18 @@ func (s *Service) waiverPickups(ctx context.Context, leagueID string, week int, 
 }
 
 func get[T any](s *Service, ctx context.Context, path, query string) (T, error) {
+	return getWithOptions[T](s, ctx, path, query, "", s.ttl)
+}
+
+func getWithOptions[T any](s *Service, ctx context.Context, path, query, cacheKey string, ttl time.Duration) (T, error) {
 	var result T
-	key := "sleeper:" + path
-	if query != "" {
-		key += "?" + query
+	if cacheKey == "" {
+		cacheKey = "sleeper:" + path
+		if query != "" {
+			cacheKey += "?" + query
+		}
 	}
-	body, err := s.cache.Get(ctx, key)
+	body, err := s.cache.Get(ctx, cacheKey)
 	if err == cache.ErrMiss {
 		response, requestErr := s.client.Get(ctx, path, query)
 		if requestErr != nil {
@@ -289,7 +296,7 @@ func get[T any](s *Service, ctx context.Context, path, query string) (T, error) 
 			return result, fmt.Errorf("Sleeper returned status %d for %s", response.StatusCode, path)
 		}
 		body = response.Body
-		if cacheErr := s.cache.Set(ctx, key, body, s.ttl); cacheErr != nil { /* cache failures do not block a dashboard response */
+		if cacheErr := s.cache.Set(ctx, cacheKey, body, ttl); cacheErr != nil { /* cache failures do not block a dashboard response */
 		}
 	} else if err != nil {
 		return result, fmt.Errorf("read cache for %s: %w", path, err)
