@@ -63,6 +63,14 @@ func (h *Handler) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		r.URL.Path = "/api/v1/user/" + h.userID
 	}
+	if strings.HasPrefix(r.URL.Path, "/api/v1/league") {
+		resolvedPath, ok := h.resolveLeaguePath(r.URL.Path)
+		if !ok {
+			http.Error(w, `{"error":"SLEEPER_LEAGUE_ID is not configured"}`, http.StatusBadRequest)
+			return
+		}
+		r.URL.Path = resolvedPath
+	}
 	if r.Method != http.MethodGet || !strings.HasPrefix(r.URL.Path, "/api/v1/") {
 		http.NotFound(w, r)
 		return
@@ -89,6 +97,29 @@ func (h *Handler) serve(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, response.StatusCode, response.Body)
+}
+
+func (h *Handler) resolveLeaguePath(path string) (string, bool) {
+	switch path {
+	case "/api/v1/league":
+		if h.leagueID == "" {
+			return "", false
+		}
+		return "/api/v1/league/" + h.leagueID, true
+	case "/api/v1/league/rosters":
+		if h.leagueID == "" {
+			return "", false
+		}
+		return "/api/v1/league/" + h.leagueID + "/rosters", true
+	}
+	const matchupPrefix = "/api/v1/league/matchups/"
+	if strings.HasPrefix(path, matchupPrefix) {
+		if h.leagueID == "" {
+			return "", false
+		}
+		return "/api/v1/league/" + h.leagueID + "/matchups/" + strings.TrimPrefix(path, matchupPrefix), true
+	}
+	return path, true
 }
 
 func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request) {

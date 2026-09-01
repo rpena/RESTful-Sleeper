@@ -10,6 +10,9 @@ The proxy forwards GET requests under `/api/v1/` to Sleeper's `/v1/` API:
 - `GET /api/v1/league/{league_id}`
 - `GET /api/v1/league/{league_id}/rosters`
 - `GET /api/v1/league/{league_id}/matchups/{week}`
+- `GET /api/v1/league` (uses `SLEEPER_LEAGUE_ID`)
+- `GET /api/v1/league/rosters` (uses `SLEEPER_LEAGUE_ID`)
+- `GET /api/v1/league/matchups/{week}` (uses `SLEEPER_LEAGUE_ID`)
 - `GET /api/v1/user/{user_id}`
 - `GET /api/v1/user` (uses `SLEEPER_USER_ID`)
 - `GET /api/v1/dashboard?league_id={league_id}&user_id={user_id}&season={season}&week={week}`
@@ -17,7 +20,7 @@ The proxy forwards GET requests under `/api/v1/` to Sleeper's `/v1/` API:
 
 Any additional Sleeper GET endpoint can be forwarded without code changes. Query parameters are included in the Redis cache key. The `players/nfl` endpoint is the exception: it uses a UTC calendar-day key and expires at the next UTC midnight, regardless of the normal `CACHE_TTL` setting.
 
-The dashboard endpoint returns one response containing the selected team's current matchup, starter and roster player points versus projections, league standings, and the top ten players added through completed waiver or free-agent transactions for that week. Set `SLEEPER_LEAGUE_ID` and `SLEEPER_USER_ID` in the environment for default dashboard values, or provide `league_id` and `user_id` in the request to override them. The shorthand `/api/v1/user` endpoint also uses `SLEEPER_USER_ID`. `season` defaults to 2026 and `week` defaults to 1 when omitted.
+The dashboard endpoint returns one response containing the selected team's current matchup, starter and roster player points versus projections, league standings, and the top ten players added through completed waiver or free-agent transactions for that week. Set `SLEEPER_LEAGUE_ID` and `SLEEPER_USER_ID` in the environment for default dashboard values, or provide `league_id` and `user_id` in the request to override them. The shorthand `/api/v1/user` endpoint also uses `SLEEPER_USER_ID`. The shorthand league endpoints use `SLEEPER_LEAGUE_ID`; explicit IDs in the URL remain supported. `season` defaults to 2026 and `week` defaults to 1 when omitted.
 
 ## Local development
 

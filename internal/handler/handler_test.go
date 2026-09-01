@@ -61,6 +61,47 @@ func TestServeUserRequiresConfiguredUserID(t *testing.T) {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
 	}
 }
+
+func TestServeLeagueRoutesUseConfiguredLeagueID(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		want string
+	}{
+		{name: "league", path: "/api/v1/league", want: "league/myLeague"},
+		{name: "rosters", path: "/api/v1/league/rosters", want: "league/myLeague/rosters"},
+		{name: "matchups", path: "/api/v1/league/matchups/3", want: "league/myLeague/matchups/3"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client := &fakeClient{}
+			store := &fakeCache{values: make(map[string][]byte)}
+			h := &Handler{sleeper: client, cache: store, ttl: time.Minute, leagueID: "myLeague"}
+			recorder := httptest.NewRecorder()
+
+			h.serve(recorder, httptest.NewRequest(http.MethodGet, test.path, nil))
+
+			if recorder.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+			}
+			if client.path != test.want {
+				t.Fatalf("upstream path = %q, want %q", client.path, test.want)
+			}
+		})
+	}
+}
+
+func TestServeLeagueRequiresConfiguredLeagueID(t *testing.T) {
+	h := &Handler{}
+	recorder := httptest.NewRecorder()
+
+	h.serve(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/league", nil))
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
+	}
+}
+
 func (c *fakeCache) Set(_ context.Context, key string, value []byte, _ time.Duration) error {
 	c.values[key] = value
 	return nil
