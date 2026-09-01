@@ -11,9 +11,12 @@ The proxy forwards GET requests under `/api/v1/` to Sleeper's `/v1/` API:
 - `GET /api/v1/league/{league_id}/rosters`
 - `GET /api/v1/league/{league_id}/matchups/{week}`
 - `GET /api/v1/user/{user_id}`
+- `GET /api/v1/dashboard?league_id={league_id}&user_id={user_id}&season={season}&week={week}`
 - `GET /healthz`
 
 Any additional Sleeper GET endpoint can be forwarded without code changes. Query parameters are included in the Redis cache key.
+
+The dashboard endpoint returns one response containing the selected team's current matchup, starter and roster player points versus projections, league standings, and the top ten players added through completed waiver or free-agent transactions for that week. `league_id` and `user_id` are request parameters so multiple people and leagues can use the same service. `season` defaults to 2026 and `week` defaults to 1 when omitted.
 
 ## Local development
 
