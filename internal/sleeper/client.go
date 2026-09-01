@@ -43,7 +43,7 @@ func (c *Client) Get(ctx context.Context, path string, query string) (Response, 
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 10<<20))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 50<<20))
 	if err != nil {
 		return Response{}, fmt.Errorf("read Sleeper response: %w", err)
 	}
