@@ -269,6 +269,7 @@ func get[T any](s *Service, ctx context.Context, path, query string) (T, error) 
 
 func getWithOptions[T any](s *Service, ctx context.Context, path, query, cacheKey string, ttl time.Duration) (T, error) {
 	var result T
+	cacheHit := false
 	if cacheKey == "" {
 		cacheKey = "sleeper:" + path
 		if query != "" {
@@ -289,9 +290,25 @@ func getWithOptions[T any](s *Service, ctx context.Context, path, query, cacheKe
 		}
 	} else if err != nil {
 		return result, fmt.Errorf("read cache for %s: %w", path, err)
+	} else {
+		cacheHit = true
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
-		return result, fmt.Errorf("decode Sleeper response for %s: %w", path, err)
+		if !cacheHit {
+			return result, fmt.Errorf("decode Sleeper response for %s: %w", path, err)
+		}
+		response, requestErr := s.client.Get(ctx, path, query)
+		if requestErr != nil {
+			return result, requestErr
+		}
+		if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+			return result, fmt.Errorf("Sleeper returned status %d for %s", response.StatusCode, path)
+		}
+		if cacheErr := s.cache.Set(ctx, cacheKey, response.Body, ttl); cacheErr != nil { /* cache failures do not block a dashboard response */
+		}
+		if err := json.Unmarshal(response.Body, &result); err != nil {
+			return result, fmt.Errorf("decode Sleeper response for %s: %w", path, err)
+		}
 	}
 	return result, nil
 }
