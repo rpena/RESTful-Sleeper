@@ -32,14 +32,16 @@ type Handler struct {
 	cache     cacheStore
 	ttl       time.Duration
 	dashboard dashboardService
+	leagueID  string
+	userID    string
 }
 
-func New(client *sleeper.Client, redisCache *cache.Cache, ttl time.Duration, dashboardServices ...dashboardService) http.Handler {
+func New(client *sleeper.Client, redisCache *cache.Cache, ttl time.Duration, leagueID, userID string, dashboardServices ...dashboardService) http.Handler {
 	var dashboardHandler dashboardService
 	if len(dashboardServices) > 0 {
 		dashboardHandler = dashboardServices[0]
 	}
-	h := &Handler{sleeper: client, cache: redisCache, ttl: ttl, dashboard: dashboardHandler}
+	h := &Handler{sleeper: client, cache: redisCache, ttl: ttl, dashboard: dashboardHandler, leagueID: leagueID, userID: userID}
 	return http.HandlerFunc(h.serve)
 }
 
@@ -91,9 +93,17 @@ func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		week = 1
 	}
+	leagueID := r.URL.Query().Get("league_id")
+	if leagueID == "" {
+		leagueID = h.leagueID
+	}
+	userID := r.URL.Query().Get("user_id")
+	if userID == "" {
+		userID = h.userID
+	}
 	request := dashboard.Request{
-		LeagueID: r.URL.Query().Get("league_id"),
-		UserID:   r.URL.Query().Get("user_id"),
+		LeagueID: leagueID,
+		UserID:   userID,
 		Season:   r.URL.Query().Get("season"),
 		Week:     week,
 	}
