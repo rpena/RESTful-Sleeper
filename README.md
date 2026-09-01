@@ -69,18 +69,18 @@ Configure the REST sensor first:
 
 ```yaml
 rest:
-	- resource: http://YOUR_DOCKER_HOST:8080/api/v1/dashboard
-		scan_interval: 60
-		sensor:
-			- name: Sleeper Dashboard
-				unique_id: sleeper_dashboard
-				value_template: "{{ value_json.week }}"
-				json_attributes:
-					- league
-					- matchups
-					- matchup
-					- standings
-					- waiver_pickups
+  - resource: http://YOUR_DOCKER_HOST:8080/api/v1/dashboard
+    scan_interval: 60
+    sensor:
+      - name: Sleeper Dashboard
+        unique_id: sleeper_dashboard
+        value_template: "{{ value_json.week }}"
+        json_attributes:
+          - league
+          - matchups
+          - matchup
+          - standings
+          - waiver_pickups
 ```
 
 Add the card to a dashboard:
@@ -95,3 +95,17 @@ show_raw: false
 ```
 
 The refresh button requests an immediate update of the REST sensor. The API remains available as raw JSON at `/api/v1/dashboard`.
+
+The REST sensor polls automatically, so no `shell_command` or update automation is required. If you have an automation named `Update Sleeper Users`, remove its `shell_command.update_sleeper_users` action. If you want a scheduled refresh instead of relying only on `scan_interval`, use the built-in service:
+
+```yaml
+alias: Update Sleeper Dashboard
+trigger:
+	- platform: time_pattern
+		minutes: "/5"
+action:
+	- service: homeassistant.update_entity
+		target:
+			entity_id: sensor.sleeper_dashboard
+mode: single
+```
