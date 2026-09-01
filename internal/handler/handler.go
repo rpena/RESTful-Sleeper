@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/your-org/restful-sleeper/internal/cache"
-	"github.com/your-org/restful-sleeper/internal/sleeper"
+	"github.com/rpena/RESTful-Sleeper/internal/cache"
+	"github.com/rpena/RESTful-Sleeper/internal/sleeper"
 )
 
 type sleeperClient interface {

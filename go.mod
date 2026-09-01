@@ -1,4 +1,4 @@
-module github.com/your-org/restful-sleeper
+module github.com/rpena/RESTful-Sleeper
 
 go 1.23
 

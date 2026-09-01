@@ -9,10 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/your-org/restful-sleeper/internal/cache"
-	"github.com/your-org/restful-sleeper/internal/config"
-	"github.com/your-org/restful-sleeper/internal/handler"
-	"github.com/your-org/restful-sleeper/internal/sleeper"
+	"github.com/rpena/RESTful-Sleeper/internal/cache"
+	"github.com/rpena/RESTful-Sleeper/internal/config"
+	"github.com/rpena/RESTful-Sleeper/internal/handler"
+	"github.com/rpena/RESTful-Sleeper/internal/sleeper"
 )
 
 func main() {
