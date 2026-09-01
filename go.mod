@@ -2,7 +2,7 @@ module github.com/rpena/RESTful-Sleeper
 
 go 1.23
 
-require github.com/redis/go-redis/v9 v9.6.1
+require github.com/redis/go-redis/v9 v9.6.3
 
 require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
