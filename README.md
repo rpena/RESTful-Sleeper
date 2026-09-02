@@ -79,6 +79,8 @@ rest:
         value_template: "{{ value_json.week }}"
         json_attributes:
           - league
+          - game_day
+          - status
           - matchups
           - matchup
           - standings
