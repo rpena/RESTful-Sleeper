@@ -18,30 +18,25 @@ type sleeperClient interface {
 	Get(context.Context, string, string) (sleeper.Response, error)
 }
 
-type cacheStore interface {
-	Get(context.Context, string) ([]byte, error)
-	Set(context.Context, string, []byte, time.Duration) error
-}
-
 type dashboardService interface {
 	Build(context.Context, dashboard.Request) (dashboard.Dashboard, error)
 }
 
 type Handler struct {
 	sleeper   sleeperClient
-	cache     cacheStore
+	cache     cache.Store
 	ttl       time.Duration
 	dashboard dashboardService
 	leagueID  string
 	userID    string
 }
 
-func New(client *sleeper.Client, redisCache *cache.Cache, ttl time.Duration, leagueID, userID string, dashboardServices ...dashboardService) http.Handler {
+func New(client *sleeper.Client, cacheStore cache.Store, ttl time.Duration, leagueID, userID string, dashboardServices ...dashboardService) http.Handler {
 	var dashboardHandler dashboardService
 	if len(dashboardServices) > 0 {
 		dashboardHandler = dashboardServices[0]
 	}
-	h := &Handler{sleeper: client, cache: redisCache, ttl: ttl, dashboard: dashboardHandler, leagueID: leagueID, userID: userID}
+	h := &Handler{sleeper: client, cache: cacheStore, ttl: ttl, dashboard: dashboardHandler, leagueID: leagueID, userID: userID}
 	return http.HandlerFunc(h.serve)
 }
 

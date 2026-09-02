@@ -10,6 +10,11 @@ import (
 
 var ErrMiss = errors.New("cache miss")
 
+type Store interface {
+	Get(context.Context, string) ([]byte, error)
+	Set(context.Context, string, []byte, time.Duration) error
+}
+
 type Cache struct {
 	client *redis.Client
 }
