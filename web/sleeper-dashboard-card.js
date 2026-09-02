@@ -108,6 +108,7 @@ class SleeperDashboardCard extends HTMLElement {
 
   emptyState(state) {
     if (!state) return `<div class="empty"><strong>Waiting for dashboard data</strong><span>Check the REST sensor entity in Home Assistant.</span></div>`;
+	if (state.attributes?.game_day === false) return `<div class="empty"><strong>No NFL games scheduled today</strong><span>${this.escape(state.attributes.status || "Dashboard refresh is paused until the next game window.")}</span></div>`;
     return `<div class="empty"><strong>No matchup data yet</strong><span>${this.escape(state.state || "The selected week has no data.")}</span></div>`;
   }
 

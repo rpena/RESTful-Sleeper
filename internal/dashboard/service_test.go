@@ -90,6 +90,25 @@ func TestPlayerHasPlayedIgnoresFutureZeroStats(t *testing.T) {
 	}
 }
 
+func TestIsNFLGameWindow(t *testing.T) {
+	tests := []struct {
+		name string
+		date time.Time
+		want bool
+	}{
+		{name: "wednesday in season", date: time.Date(2026, time.September, 2, 12, 0, 0, 0, time.UTC), want: false},
+		{name: "sunday in season", date: time.Date(2026, time.September, 6, 12, 0, 0, 0, time.UTC), want: true},
+		{name: "sunday offseason", date: time.Date(2026, time.July, 12, 12, 0, 0, 0, time.UTC), want: false},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := isNFLGameWindow(test.date); got != test.want {
+				t.Fatalf("isNFLGameWindow() = %t, want %t", got, test.want)
+			}
+		})
+	}
+}
+
 func TestUserReferenceResolvesUsername(t *testing.T) {
 	users := []userResponse{{UserID: "123", Username: "muych1ngones", DisplayName: "My Team"}}
 	requestedOwnerID := "muych1ngones"

@@ -39,6 +39,8 @@ type Request struct {
 type Dashboard struct {
 	League        League           `json:"league"`
 	Week          int              `json:"week"`
+	GameDay       bool             `json:"game_day"`
+	Status        string           `json:"status,omitempty"`
 	Matchups      []MatchupSummary `json:"matchups"`
 	Matchup       MatchupView      `json:"matchup"`
 	Standings     []Standing       `json:"standings"`
@@ -113,6 +115,11 @@ type leagueResponse struct {
 	TotalRosters int    `json:"total_rosters"`
 }
 
+type stateResponse struct {
+	Season     string `json:"season"`
+	SeasonType string `json:"season_type"`
+}
+
 type userResponse struct {
 	UserID      string `json:"user_id"`
 	Username    string `json:"username"`
@@ -154,6 +161,17 @@ func New(client sleeperClient, redisCache cacheStore, ttl time.Duration) *Servic
 }
 
 func (s *Service) Build(ctx context.Context, request Request) (Dashboard, error) {
+	now := time.Now().UTC()
+	if !isNFLGameWindow(now) {
+		return Dashboard{Week: request.Week, GameDay: false, Status: "No NFL game window today"}, nil
+	}
+	state, err := getWithOptions[stateResponse](s, ctx, "state/nfl", "", "sleeper:state:nfl:"+now.Format("2006-01-02"), untilNextUTCMidnight(now))
+	if err != nil {
+		return Dashboard{}, err
+	}
+	if state.SeasonType == "off" {
+		return Dashboard{Week: request.Week, GameDay: false, Status: "NFL is out of season"}, nil
+	}
 	league, err := get[leagueResponse](s, ctx, "league/"+request.LeagueID, "")
 	if err != nil {
 		return Dashboard{}, err
@@ -172,7 +190,6 @@ func (s *Service) Build(ctx context.Context, request Request) (Dashboard, error)
 	}
 	stats, _ := get[map[string]map[string]any](s, ctx, "stats/nfl/"+request.Season+"/"+strconv.Itoa(request.Week), "season_type=regular")
 	projections, _ := get[map[string]map[string]any](s, ctx, "projections/nfl/"+request.Season+"/"+strconv.Itoa(request.Week), "season_type=regular")
-	now := time.Now().UTC()
 	players, err := getWithOptions[map[string]playerMetadata](s, ctx, "players/nfl", "", sleeper.CacheKey("players/nfl", "", now), sleeper.CacheTTL("players/nfl", now, s.ttl))
 	if err != nil {
 		return Dashboard{}, err
@@ -227,7 +244,30 @@ func (s *Service) Build(ctx context.Context, request Request) (Dashboard, error)
 
 	waiverPickups := s.waiverPickups(ctx, request.LeagueID, request.Week, players)
 	matchupSummaries := s.matchupSummaries(matchups, rosterByID, ownerNames, stats, projections)
-	return Dashboard{League: League{ID: request.LeagueID, Name: league.Name, Season: league.Season, TotalRosters: league.TotalRosters}, Week: request.Week, Matchups: matchupSummaries, Matchup: matchupView, Standings: standings, WaiverPickups: waiverPickups}, nil
+	return Dashboard{League: League{ID: request.LeagueID, Name: league.Name, Season: league.Season, TotalRosters: league.TotalRosters}, Week: request.Week, GameDay: true, Matchups: matchupSummaries, Matchup: matchupView, Standings: standings, WaiverPickups: waiverPickups}, nil
+}
+
+func isNFLGameWindow(now time.Time) bool {
+	month := now.UTC().Month()
+	if month >= time.March && month < time.September {
+		return false
+	}
+	switch now.UTC().Weekday() {
+	case time.Thursday, time.Sunday, time.Monday:
+		return true
+	default:
+		return false
+	}
+}
+
+func untilNextUTCMidnight(now time.Time) time.Duration {
+	utcNow := now.UTC()
+	nextDay := time.Date(utcNow.Year(), utcNow.Month(), utcNow.Day()+1, 0, 0, 0, 0, time.UTC)
+	ttl := nextDay.Sub(utcNow)
+	if ttl < time.Second {
+		return time.Second
+	}
+	return ttl
 }
 
 func (s *Service) matchupSummaries(matchups []matchupResponse, rosters map[int]rosterResponse, ownerNames map[string]string, stats, projections map[string]map[string]any) []MatchupSummary {

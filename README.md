@@ -22,6 +22,8 @@ Any additional Sleeper GET endpoint can be forwarded without code changes. Query
 
 The dashboard endpoint returns one response containing every matchup for the selected week, with current scores, projected scores when available, and starter counts split between completed and remaining players. It also includes the selected team's matchup, player points versus projections, league standings, and the top ten players added through completed waiver or free-agent transactions. Set `SLEEPER_LEAGUE_ID` and `SLEEPER_USER_ID` in the environment for default dashboard values, or provide `league_id` and `user_id` in the request to override them. The shorthand `/api/v1/user` endpoint also uses `SLEEPER_USER_ID`. The shorthand league endpoints use `SLEEPER_LEAGUE_ID`; explicit IDs in the URL remain supported. `season` defaults to the configured league's season and `week` defaults to 1 when omitted. Users, stats, projections, and waiver data are supplemental; if one is unavailable, the dashboard still returns its available sections.
 
+Dashboard refreshes are gated to NFL game windows (Thursday, Sunday, and Monday during September through February). On those days, the service caches the Sleeper `state/nfl` response until the next UTC midnight before fetching dashboard data. On other days, it returns `game_day: false` without calling Sleeper, so normal cache TTL expiry does not trigger unnecessary upstream requests. This weekday gate is intentionally conservative because Sleeper's state endpoint does not expose an exact daily game schedule.
+
 ## Local development
 
 Requirements: Go 1.27+ and Docker Compose.
