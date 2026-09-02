@@ -14,6 +14,7 @@ import (
 	"github.com/rpena/RESTful-Sleeper/internal/dashboard"
 	"github.com/rpena/RESTful-Sleeper/internal/handler"
 	"github.com/rpena/RESTful-Sleeper/internal/sleeper"
+	"github.com/rpena/RESTful-Sleeper/web"
 )
 
 func main() {
@@ -31,9 +32,10 @@ func main() {
 
 	client := sleeper.NewClient(cfg.SleeperBaseURL, cfg.RequestTimeout)
 	dashboardService := dashboard.New(client, redisCache, cfg.CacheTTL)
+	apiHandler := handler.New(client, redisCache, cfg.CacheTTL, cfg.SleeperLeagueID, cfg.SleeperUserID, dashboardService)
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           handler.New(client, redisCache, cfg.CacheTTL, cfg.SleeperLeagueID, cfg.SleeperUserID, dashboardService),
+		Handler:           web.NewHandler(apiHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      30 * time.Second,

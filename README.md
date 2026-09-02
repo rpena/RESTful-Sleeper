@@ -71,9 +71,11 @@ On the target Debian/Ubuntu VM or LXC inside Proxmox:
 
 The service listens on port `8080` and exits cleanly on SIGTERM, which supports normal container restarts and VM maintenance.
 
+The Go service also serves the standalone browser dashboard at `http://YOUR_DOCKER_HOST:8080/`. It uses the same `web/sleeper-dashboard-core.js` module as the Home Assistant card, so both clients share formatting and visual styles. The page defaults to `/api/v1/dashboard`; use its endpoint field if the API is hosted elsewhere.
+
 ## Home Assistant card
 
-The repository includes a dependency-free custom Lovelace card at `web/sleeper-dashboard-card.js`. Copy it into Home Assistant's `/config/www/` directory, then add it as a JavaScript module resource under **Settings > Dashboards > Resources**:
+The repository includes a dependency-free custom Lovelace card at `web/sleeper-dashboard-card.js`. Copy both `web/sleeper-dashboard-card.js` and `web/sleeper-dashboard-core.js` into Home Assistant's `/config/www/` directory, then add the card as a JavaScript module resource under **Settings > Dashboards > Resources**:
 
 ```yaml
 url: /local/sleeper-dashboard-card.js

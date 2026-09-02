@@ -1,3 +1,5 @@
+import { dashboardStyles } from "./sleeper-dashboard-core.js";
+
 class SleeperDashboardCard extends HTMLElement {
   static getStubConfig() {
     return { entity: "sensor.sleeper_dashboard" };
@@ -47,7 +49,7 @@ class SleeperDashboardCard extends HTMLElement {
       : matchups;
 
     this.shadowRoot.innerHTML = `
-      <style>${this.styles()}</style>
+      <style>${dashboardStyles()}</style>
       <ha-card>
         <div class="shell">
           <header class="header">
