@@ -39,6 +39,19 @@ Stop the stack with `docker compose down`. Redis data is kept in the `redis-data
 
 `CACHE_TTL` and `REQUEST_TIMEOUT` are expressed in seconds. Override them in a local `.env` file or in the Compose environment section.
 
+## Cache backends
+
+Redis is the default cache backend and is included in Docker Compose. The dashboard and HTTP handler depend on the `cache.Store` interface rather than Redis directly, so another backend can be added without changing those layers. A replacement only needs to provide `Get` and `Set` methods:
+
+```go
+type Store interface {
+  Get(context.Context, string) ([]byte, error)
+  Set(context.Context, string, []byte, time.Duration) error
+}
+```
+
+To use a different backend, implement this interface and inject it when constructing the dashboard service and HTTP handler in `cmd/api/main.go`. Redis-specific setup, such as the Compose service and startup ping, can then be replaced by that backend's initialization and health check.
+
 For Docker Compose, create a `.env` file next to `docker-compose.yml`:
 
 ```dotenv
