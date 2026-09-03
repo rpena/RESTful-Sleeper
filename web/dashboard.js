@@ -48,7 +48,7 @@ async function load() {
     const response = await fetch(endpoint.value);
     if (!response.ok) throw new Error(`API returned ${response.status}`);
     render(await response.json());
-    lastUpdated.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+    if (lastUpdated) lastUpdated.textContent = `Updated ${new Date().toLocaleTimeString()}`;
   } catch (error) {
     content.innerHTML = `<div class="empty"><strong>Unable to load dashboard</strong><span>${escapeHTML(error.message)}</span></div>`;
   }
